@@ -52,8 +52,7 @@ const port = process.env.PORT || 3010;
 const rssUrl = "YOUR RSS SOURCE";
 ```
 
-5. Ejecuta el servidor proxy
-   -Asegúrate de tener PM2 instalado globalmente en tu servidor
+5. Ejecuta el servidor proxy (asegúrate de tener PM2 instalado globalmente en tu servidor)
 
 ```sh
 npm install -g pm2
