@@ -15,11 +15,12 @@ Servidor proxy creado en Express para obtención de contenido CORS de Spotify Po
 ### Requisitos
 
 - Node.js v20
-- NPM 10 (o el que prefieras)
+- NPM 10\*
 - Git
-- Nginx Proxy Manager
-- Certbot
-- PM2 (o el que prefieras)
+- Nginx Proxy Manager + Certbot\*
+- PM2\*
+
+(\*) Puedes usar PNPM, Yarn o el gestor de paquetes de Node.js que más prefieras. Nginx Proxy Manager y Certbot pueden ser reemplazados por Apache u otra tecnología de servidor para tus dominios y certificados SSL. PM2 es muy común para gestionar procesos en segundo plano en proyectos de Node.js pero puedes usar cualquiera que te guste más.
 
 ### Instalación
 
