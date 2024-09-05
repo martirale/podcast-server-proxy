@@ -2,7 +2,7 @@
 
 ![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB)
 
-Servidor proxy creado en Express para obtención de contenido CORS de Spotify Podcasters (o cualquier fuente RSS _a priori_) al reproductor web de podcasts de [Creatyum Media](https://creatyum.media/podcast).
+Este proyecto es un servidor proxy creado en Express para obtener el contenido de la fuente RSS de Spotify Podcasters (o cualquier fuente RSS _a priori_) y ser utilizada en el reproductor web personalizado de podcasts de [Creatyum Media](https://creatyum.media/podcast).
 
 ## Características principales
 
@@ -27,7 +27,7 @@ Servidor proxy creado en Express para obtención de contenido CORS de Spotify Po
 1. Clona el repositorio
 
 ```sh
-https://github.com/martirale/podcast-server-proxy.git
+git clone https://github.com/martirale/podcast-server-proxy.git
 ```
 
 2. Instala los paquetes de NPM
