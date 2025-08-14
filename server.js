@@ -3,8 +3,8 @@ const Parser = require('rss-parser');
 const cors = require('cors');
 
 const app = express();
-const port = process.env.PORT || 3010; // OR THE PORT THAT YOU MOST WANT
-const rssUrl = 'YOUR RSS SOURCE';
+const port = process.env.PORT;
+const rssUrl = process.env.SOURCE;
 
 app.use(cors());
 
