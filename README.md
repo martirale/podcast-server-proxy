@@ -1,95 +1,95 @@
 # Podcast Server Proxy
 
-![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB)
+Servidor proxy de podcasts con Express 5. Consulta una fuente RSS configurada en el servidor y devuelve sus episodios como JSON para que cualquier sitio web o reproductor pueda consumirlos.
 
-Este proyecto es un servidor proxy creado en Express para obtener el contenido de la fuente RSS de Spotify Podcasters (o cualquier fuente RSS _a priori_) y ser utilizada en el reproductor web personalizado de podcasts de [Creatyum Media](https://creatyum.media/podcast).
+El proyecto puede usarse en distintos sitios y no depende de una marca, un reproductor ni un proveedor de podcasts específico. La compatibilidad de cada fuente depende de su estructura y de lo que admita `rss-parser`.
 
-## Características principales
+## Funcionamiento
 
-- **Obtención del contenido:** Obtiene el contenido completo de la fuente RSS de tu proveedor de podcast.
-- **Resolución de CORS:** Resuelve el problema de CORS generado cuando tu front-end solicita directamente a la fuente el contenido empleando una técnica de proxy.
-- **API propia:** Al realizar la implementación obtienes el contenido exacto como lo proporciona tu proveedor con tu propio dominio y servidor, lo que te permite emplear tu propia API para alimentar tu proyecto.
+1. El frontend solicita `GET /api/podcast`.
+2. El servidor consulta la URL definida en `SOURCE` y analiza su RSS con `rss-parser`.
+3. La API devuelve el arreglo de episodios (`feed.items`) como JSON.
 
-## Cómo usar
+La respuesta contiene los campos que normaliza `rss-parser`; no devuelve el XML original ni los metadatos generales del canal. Cada solicitud vuelve a consultar la fuente: no hay caché ni almacenamiento local.
 
-### Requisitos
+El middleware `cors` permite que el navegador consulte esta API desde otros dominios. La fuente RSS se consulta desde el servidor, por lo que esa solicitud no está sujeta a las restricciones CORS del navegador.
 
-- Node.js v20
-- NPM 10\*
-- Git
-- Nginx Proxy Manager + Certbot\*
-- PM2\*
+## Requisitos
 
-(\*) Puedes usar PNPM, Yarn o el gestor de paquetes de Node.js que más prefieras. Nginx Proxy Manager y Certbot pueden ser reemplazados por Apache u otra tecnología de servidor para tus dominios y certificados SSL. PM2 es muy común para gestionar procesos en segundo plano en proyectos de Node.js pero puedes usar cualquiera que te guste más.
+- Node.js **22.23.4**
+- npm, incluido con Node.js
+- Git, para clonar el repositorio
 
-### Instalación
+No requiere compilación. Un administrador de procesos y un proxy inverso con HTTPS son opciones de despliegue, no requisitos para ejecutarlo localmente.
 
-1. Clona el repositorio
+## Instalación
 
 ```sh
 git clone https://github.com/martirale/podcast-server-proxy.git
+cd podcast-server-proxy
+npm ci
 ```
 
-2. Instala los paquetes de NPM
+## Configuración
+
+El servidor lee estas variables del entorno:
+
+| Variable | Requerida | Descripción |
+| --- | --- | --- |
+| `PORT` | Sí | Puerto HTTP en el que escucha el servidor |
+| `SOURCE` | Sí | URL HTTP o HTTPS de la fuente RSS del podcast |
+
+No hay un puerto predeterminado ni se carga un archivo `.env` automáticamente. Configurá ambas variables en tu plataforma de despliegue o al iniciar el proceso:
 
 ```sh
-npm install
+PORT=3010 SOURCE="https://example.com/podcast.xml" npm start
 ```
 
-3. Ajusta el puerto (o déjalo por defecto en 3010)
+## API
+
+### `GET /api/podcast`
+
+Devuelve un arreglo JSON con los episodios de la fuente configurada. Los campos disponibles dependen del feed y de cómo los interprete `rss-parser`.
 
 ```js
-// server.js
+const response = await fetch('https://podcast.example.com/api/podcast');
 
-const port = process.env.PORT || 3010;
+if (!response.ok) {
+  throw new Error('Unable to fetch podcast episodes');
+}
+
+const episodes = await response.json();
 ```
 
-4. Ajusta tu fuente RSS (URL)
+Si la consulta o el análisis de la fuente falla, devuelve HTTP `500`:
 
-```js
-// server.js
-
-const rssUrl = "YOUR RSS SOURCE";
+```json
+{
+  "error": "Error fetching RSS feed"
+}
 ```
 
-5. Ejecuta el servidor proxy (asegúrate de tener PM2 instalado globalmente en tu servidor)
+La API no recibe URLs desde el cliente. Cada instancia consulta una sola fuente, definida por `SOURCE`. No descarga ni retransmite los archivos de audio de los episodios.
+
+## Despliegue
+
+Usá Node.js `22.23.4` también en el VPS o contenedor; el campo `engines` declara el requisito, pero no instala ni actualiza Node.js.
+
+Configurá `PORT` y `SOURCE` en el entorno del servicio. El comando de inicio es:
 
 ```sh
-npm install -g pm2
+npm start
 ```
 
-- En el directorio raíz del proyecto de Express ejecuta el siguiente comando
+Si administrás el proceso con PM2, una vez instalado podés iniciarlo así:
 
 ```sh
-pm2 start server.js --name podcast-proxy
-```
-
-- Guarda el proceso con PM2
-
-```sh
+PORT=3010 SOURCE="https://example.com/podcast.xml" pm2 start server.js --name podcast-proxy
 pm2 save
 ```
 
-6. Configura un dominio (o sub-dominio) para tu servidor proxy utilizando `Nginx Proxy Manager` y `Certbot` para el SSL y así poder utilizar la API en tu front-end sin riesgos de seguridad al utilizar directamente la IP del servidor o un protocolo HTTP plano.
+Publicá el servicio detrás de un proxy inverso con HTTPS, como Nginx, Traefik o Caddy. La API permite solicitudes desde cualquier origen y no implementa autenticación; tenelo en cuenta al decidir dónde exponerla.
 
-## Explicación
+## Licencia
 
-Express actúa como intermediario (proxy) entre el front-end (en mi caso, mi reproductor web) y la fuente de datos de Spotify (o el feed RSS de tu podcast).
-
-Este servidor Express hace lo siguiente:
-
-1. Solicita el feed RSS desde Spotify utilizando `rss-parser`.
-2. Aplica `cors` para permitir que nuestro dominio acceda a la API sin restricciones.
-3. Reenvía el contenido al front-end como si fuera una API interna desde nuestro servidor.
-
-Por lo que, estamos creando un intermediario que omite las restricciones de CORS. De esta forma, el navegador no interactúa directamente con Spotify (que no permite acceder a sus datos directamente), sino que con nuestro servidor, el cual está autorizado para hacer la petición y devolvernos los datos sin el mencionado problema de CORS.
-
-### ¿Por qué?
-
-La razón de esta solución es debido a un problema de CORS (Cross-Origin Resource Sharing). Este problema ocurre cuando el navegador bloquea solicitudes hechas desde nuestro dominio hacia otro dominio, ya que el otro dominio no está autorizado explícitamente para compartir recursos con nuestro dominio.
-
-Tras una búsqueda bastante grande en foros y blogs e innumerables iteraciones con ChatGPT y Claude, logré una amalgama de configuraciones que tras limpiarlas y probarlas logré dar con esta solución y espero que pueda servir como solución para otros pérdidos como yo.
-
-## Descargo de responsabilidad
-
-Esta solución está hecha y probada para funcionar correctamente con fuentes RSS y ha sido probada únicamente con la de Spotify Podcasters para ser usada en mi [reproductor de podcast web propio](https://creatyum.media/podcast) y **no doy garantía de que funcione con otras fuentes RSS.** _A priori_, sí debería funcionar con cualquier fuente RSS ya que el servidor hace únicamente la función de proxy, por lo que dependerá de la lógica en tu front-end y en la estructura de la fuente RSS que estés empleando el cómo vas a trabajar los datos. **Este servidor proxy es únicamente un intermediario que resuelve el problema de CORS** mencionado con anterioridad.
+Apache License 2.0. Consultá [LICENSE](LICENSE) y [NOTICE](NOTICE).
